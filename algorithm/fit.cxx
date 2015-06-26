@@ -322,7 +322,7 @@ void fit_testingdata(const char* outfile,const char* pardir,const char* testdir,
                 treein->Project("hist",Form("hh[%d]",config->fDy5Channels[pmt_ids[pmt_id]]-1));
 
                 tmpmean=hist->GetBinContent(hist->GetMaximumBin());
-                result=hist->Fit("gaus","SNQ",tmpmean-200,tmpmean+200);
+                result=hist->Fit("gaus","SNQ","",tmpmean-200,tmpmean+200);
                 tmpmean=result->Parameter(1);
                 tmpsigma=result->Parameter(2);
 
