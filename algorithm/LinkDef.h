@@ -13,5 +13,7 @@
 #pragma link C++ function get_configurations;
 #pragma link C++ function get_references;
 #pragma link C++ namespace PTAnaBase;
+#pragma link C++ class PTAnaLedConfig+;
+#pragma link C++ class PTAnaLedConfigEntry+;
 
 #endif

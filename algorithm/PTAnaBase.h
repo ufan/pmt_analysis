@@ -36,7 +36,7 @@ namespace PTAnaBase {
   {
     voltage=(gid>>20)&0xFFF;
     width = (gid>>10)&0x3FF;
-    amplitude=gid&0x3FFF;
+    amplitude=gid&0x3FF;
   }
   
   inline int DecodeVoltage(int gid)
