@@ -24,6 +24,7 @@
 #include "PTAnaConfigData.h"
 #include "PTAnaBase.h"
 #include "PTAnaPMTPedestals.h"
+#include "PTAnaLedConfig.h"
 #include "TFile.h"
 #include "TString.h"
 #include "TFitResult.h"
@@ -479,6 +480,10 @@ void fit_testingdata_batch(const char* outfile,const char* filelist)
 
 void check_testdata(const char* infile,const char* serialno)
 {
+  PTAnaLedConfig ledconfig;
+  ledconfig.ReadConfig("./LED_config");
+  ledconfig.PrintAll(1000);
+  //////////
     TFile* filein=new TFile(infile);
     get_configurations(filein);
 
@@ -496,7 +501,6 @@ void check_testdata(const char* infile,const char* serialno)
         exit(1);
     }
     PTAnaPMTRaw* testraw=(PTAnaPMTRaw*)dir_raw->Get(serialno);
-    testraw->Print();
 
     TRef ref=testraw->fConfigData;
     ref.Print();
@@ -504,27 +508,29 @@ void check_testdata(const char* infile,const char* serialno)
     if(!config)
         std::cout<<"error"<<std::endl;
     config->Print();
+    
+    ///////////
+    cout<<"fuck"<<endl;
+    ofstream fileout(Form("%s_checktest.dat",serialno));
+    
+    fileout<<testraw->GetName()<<":"<<endl;
+    int size;
+    int gid;
+    
+    for(int i=0;i<PTAnaLedConfig::fVoltageStep;i++){
+      fileout<<PTAnaLedConfig::fVoltages[i]<<":\t";
+      size=ledconfig.fAll[PTAnaLedConfig::fVoltages[i]].size();
+      cout<<size<<endl;
+      for(int j=0;j<size;j++){
+	cout<<"\t"<<j+1<<endl;
+	gid=ledconfig.fAll[PTAnaLedConfig::fVoltages[i]][j].fGID;
+	fileout<< testraw->fRawTestData[gid].fDy5Mean<<"\t";
+      }
+      fileout<<endl;
+    }
+    fileout.close();
 
-/*
-    testraw=(PTAnaPMTRaw*)dir_raw->Get("AA2547");
-    testraw->Print();
-    ref=testraw->fConfigData;
-    ref.Print();
-    PTAnaConfigData* config_fuck=(PTAnaConfigData*)ref.GetObject();
-        if(!config_fuck)
-            std::cout<<"error"<<std::endl;
-        config_fuck->Print();
-        std::cout<< config_fuck <<std::endl;
-
-        for(int i=0;i<config_fuck->fChannelNum;i++){
-            std::cout<< config_fuck->fChannels[i] <<"\t";
-            std::cout<< config_fuck->fPMTIndexs[i] <<"\t";
-            std::cout<< config_fuck->fSerialNos[i] <<"\t";
-            std::cout<< config_fuck->fPositions[i] <<"\t";
-            std::cout<< config_fuck->fDy5Channels[i] <<"\t";
-            std::cout<< config_fuck->fDy8Channels[i] <<std::endl;
-        }
-        */
+    
     delete filein;
 }
 
