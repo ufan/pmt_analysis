@@ -25,3 +25,57 @@ fTestID(testid)
 {
   
 }
+
+std::map<int,double> PTAnaPMTRefRaw::GetCalibRatioDy5(PTAnaPMTRefRaw *ref,int refid)
+{
+    std::map<int,double> ratios;
+
+    std::map<int,PTAnaPMTFitData> tmpref,tmpcurrent;
+    switch(refid)
+    {
+    case 1:
+        tmpref=ref->fRawDataRef1;
+        tmpcurrent=fRawDataRef1;
+        break;
+    case 2:
+        tmpref=ref->fRawDataRef2;
+        tmpcurrent=fRawDataRef2;
+        break;
+    default:
+        break;
+    }
+
+    std::map<int,PTAnaPMTFitData>::iterator it;
+    for(it=tmpcurrent.begin();it!=tmpcurrent.end();it++){
+        ratios[it->first]=tmpref[it->first].fDy5Mean/(it->second).fDy5Mean;
+    }
+
+    return ratios;
+}
+
+std::map<int,double> PTAnaPMTRefRaw::GetCalibRatioDy8(PTAnaPMTRefRaw *ref,int refid)
+{
+    std::map<int,double> ratios;
+
+    std::map<int,PTAnaPMTFitData> tmpref,tmpcurrent;
+    switch(refid)
+    {
+    case 1:
+        tmpref=ref->fRawDataRef1;
+        tmpcurrent=fRawDataRef1;
+        break;
+    case 2:
+        tmpref=ref->fRawDataRef2;
+        tmpcurrent=fRawDataRef2;
+        break;
+    default:
+        break;
+    }
+
+    std::map<int,PTAnaPMTFitData>::iterator it;
+    for(it=tmpcurrent.begin();it!=tmpcurrent.end();it++){
+        ratios[it->first]=tmpref[it->first].fDy8Mean/(it->second).fDy8Mean;
+    }
+
+    return ratios;
+}

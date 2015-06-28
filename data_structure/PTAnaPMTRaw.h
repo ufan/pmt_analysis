@@ -82,7 +82,7 @@ public:
   }
   bool GetLEDCalibRatioDy5(int gid,PTAnaPMTRaw* testrun,double& ratio);
   bool GetLEDCalibRatioDy8(int gid,PTAnaPMTRaw* testrun,double& ratio);
-
+  void CalibLED(PTAnaPMTRefRaw* refraw);
 private:
   std::string		fSerialNo;
   int			fIndex;

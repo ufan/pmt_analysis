@@ -38,7 +38,9 @@ public:
   {
     return fTestID;
   }
-  
+
+  std::map<int,double> GetCalibRatioDy5(PTAnaPMTRefRaw* ref,int refid=1);
+  std::map<int,double> GetCalibRatioDy8(PTAnaPMTRefRaw* ref,int refid=1);
 private:
   int			fTestID;
   

@@ -12,6 +12,7 @@
 #pragma link C++ function check_testdata;
 #pragma link C++ function get_configurations;
 #pragma link C++ function get_references;
+#pragma link C++ function calib_led;
 #pragma link C++ namespace PTAnaBase;
 #pragma link C++ class PTAnaLedConfig+;
 #pragma link C++ class PTAnaLedConfigEntry+;

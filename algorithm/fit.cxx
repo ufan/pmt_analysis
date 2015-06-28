@@ -522,12 +522,25 @@ void check_testdata(const char* infile,const char* serialno)
       size=ledconfig.fAll[PTAnaLedConfig::fVoltages[i]].size();
       cout<<size<<endl;
       for(int j=0;j<size;j++){
-	cout<<"\t"<<j+1<<endl;
-	gid=ledconfig.fAll[PTAnaLedConfig::fVoltages[i]][j].fGID;
-	fileout<< testraw->fRawTestData[gid].fDy5Mean<<"\t";
+        cout<<"\t"<<j+1<<endl;
+        gid=ledconfig.fAll[PTAnaLedConfig::fVoltages[i]][j].fGID;
+        fileout<< testraw->fRawTestData[gid].fDy8Mean<<"\t";
       }
       fileout<<endl;
     }
+
+    for(int i=0;i<PTAnaLedConfig::fVoltageStep;i++){
+      fileout<<PTAnaLedConfig::fVoltages[i]<<"LED Calib:\t";
+      size=ledconfig.fAll[PTAnaLedConfig::fVoltages[i]].size();
+      cout<<size<<endl;
+      for(int j=0;j<size;j++){
+        cout<<"\t"<<j+1<<endl;
+        gid=ledconfig.fAll[PTAnaLedConfig::fVoltages[i]][j].fGID;
+        fileout<< testraw->fLEDCalibData[gid].fDy8Mean<<"\t";
+      }
+      fileout<<endl;
+    }
+
     fileout.close();
 
     
@@ -583,3 +596,59 @@ void get_references(TFile* filein)
     }
 }
 
+void calib_led(const char* infile,const char* testdir)
+{
+
+    TFile* filein=new TFile(infile,"update");
+    PTAnaPMTRefRaw* refraw=0;
+    filein->GetObject(Form("reference/%s",testdir),refraw);
+    refraw->Print();
+
+    //
+    get_references(filein);
+
+    //
+    PTAnaPMTRaw *testraw=0;
+    TDirectory* dir_raw=filein->GetDirectory("raw");
+    if(!dir_raw){
+        printf("error!can't get \"raw\" in %s\n",filein->GetName());
+        exit(1);
+    }
+
+    TList *keysinput=dir_raw->GetListOfKeys();
+    cout<<keysinput->GetName()<<endl;
+    TList *keys=(TList*)keysinput->Clone("clonekets");
+    cout<<keys->GetName()<<endl;
+    cout<<"rawnum:"<<keys->GetSize()<<endl;
+    TKey *key;
+    TIter next(keys);
+    Int_t size,gid;
+    std::map<int,double> dy5ratios,dy8ratios;
+    PTAnaPMTRefRaw* currentref=0;
+    std::map<int,PTAnaPMTFitData>::iterator	it;
+    if(keys){
+        while (key=(TKey*)next()) {
+            testraw=(PTAnaPMTRaw*)key->ReadObj();
+            cout<<key->GetName()<<endl;
+            cout<<testraw->fLEDCalibData.size()<<endl;
+            //
+            currentref=(PTAnaPMTRefRaw*)testraw->fRefPMTData.GetObject();
+            dy5ratios=currentref->GetCalibRatioDy5(refraw);
+            dy8ratios=currentref->GetCalibRatioDy8(refraw);
+
+            testraw->fLEDCalibData.clear();
+            testraw->fLEDCalibData=testraw->fRawTestData;
+            for(it=testraw->fRawTestData.begin();it!=testraw->fRawTestData.end();it++){
+                testraw->fLEDCalibData[it->first].fDy5Mean=((it->second).fDy5Mean)*dy5ratios[it->first];
+                testraw->fLEDCalibData[it->first].fDy8Mean=((it->second).fDy8Mean)*dy8ratios[it->first];
+            }
+
+            dir_raw->cd();
+            //cout<<testraw->fLEDCalibData.size()<<endl;
+            testraw->Write(0,TObject::kOverwrite);
+            cout<<"rawnum:"<<keys->GetSize()<<endl;
+        }
+    }
+
+    delete filein;
+}

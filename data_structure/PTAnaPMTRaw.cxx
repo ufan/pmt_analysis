@@ -60,3 +60,22 @@ bool PTAnaPMTRaw::GetLEDCalibRatioDy8(int gid, PTAnaPMTRaw *testrun,double& rati
     ratio=(fRawTestData[gid].fDy8Mean)/(testrun->fRawTestData[gid].fDy8Mean);
     return true;
 }
+
+void PTAnaPMTRaw::CalibLED(PTAnaPMTRefRaw *refraw)
+{
+    fLEDCalibData.clear();
+    //
+    PTAnaPMTRefRaw* currentraw=(PTAnaPMTRefRaw*)fRefPMTData.GetObject();
+
+    std::map<int,double> dy5ratios,dy8ratios;
+    dy5ratios=currentraw->GetCalibRatioDy5(refraw);
+    dy8ratios=currentraw->GetCalibRatioDy8(refraw);
+
+    //
+    fLEDCalibData=fRawTestData;
+    std::map<int,PTAnaPMTFitData>::iterator	it;
+    for(it=fRawTestData.begin();it!=fRawTestData.end();it++){
+        fLEDCalibData[it->first].fDy5Mean=((it->second).fDy5Mean)*dy5ratios[it->first];
+        fLEDCalibData[it->first].fDy8Mean=((it->second).fDy8Mean)*dy8ratios[it->first];
+    }
+}

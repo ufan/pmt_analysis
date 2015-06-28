@@ -25,9 +25,12 @@
 PTAnaPMTPedestals* fit_pedestal(const char* parentdir,const char* testdir,const char* date,int testid);
 void fit_pedestal_batch(const char* outfile,const char* filelist);
 void check_pedestal(const char* pardir,const char* testdir);
+
 void fit_testingdata(const char* outfile,const char* pardir,const char* testdir,int testid,const char* testdate);
 void fit_testingdata_batch(const char* outfile,const char* filelist);
 void check_testdata(const char* infile,const char* serialno);
 void get_configurations(TFile* infile);
 void get_references(TFile* filein);
+
+void calib_led(const char* infile,const char* testdir);
 #endif // _PTAnaAlgorithm_h_
