@@ -41,13 +41,15 @@ public:
 
   std::map<int,double> GetCalibRatioDy5(PTAnaPMTRefRaw* ref,int refid=1);
   std::map<int,double> GetCalibRatioDy8(PTAnaPMTRefRaw* ref,int refid=1);
+  void CalibLED(PTAnaPMTRefRaw* ref,int refid=1);
 private:
   int			fTestID;
   
 public:
   std::map<int,PTAnaPMTFitData>		fRawDataRef1;
   std::map<int,PTAnaPMTFitData>		fRawDataRef2;
-  
+  std::map<int,PTAnaPMTFitData>		fLEDCalibData;
+
   ClassDef(PTAnaPMTRefRaw,1)
 };
 

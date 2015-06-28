@@ -79,3 +79,32 @@ std::map<int,double> PTAnaPMTRefRaw::GetCalibRatioDy8(PTAnaPMTRefRaw *ref,int re
 
     return ratios;
 }
+
+void PTAnaPMTRefRaw::CalibLED(PTAnaPMTRefRaw *ref, int refid)
+{
+    fLEDCalibData.clear();
+
+    std::map<int,PTAnaPMTFitData> tmpref,tmpcurrent;
+    switch(refid)
+    {
+    case 1:
+        tmpref=ref->fRawDataRef1;
+        tmpcurrent=fRawDataRef1;
+        fLEDCalibData=fRawDataRef2;
+        break;
+    case 2:
+        tmpref=ref->fRawDataRef2;
+        tmpcurrent=fRawDataRef2;
+        fLEDCalibData=fRawDataRef1;
+        break;
+    default:
+        break;
+    }
+
+    std::map<int,PTAnaPMTFitData>::iterator it;
+    for(it=tmpcurrent.begin();it!=tmpcurrent.end();it++){
+        fLEDCalibData[it->first].fDy8Mean=fLEDCalibData[it->first].fDy8Mean*tmpref[it->first].fDy8Mean/(it->second).fDy8Mean;
+        fLEDCalibData[it->first].fDy5Mean=fLEDCalibData[it->first].fDy5Mean*tmpref[it->first].fDy5Mean/(it->second).fDy5Mean;
+    }
+
+}

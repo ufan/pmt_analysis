@@ -322,6 +322,7 @@ void fit_testingdata(const char* outfile,const char* pardir,const char* testdir,
                 hist->Reset();
                 treein->Project("hist",Form("hh[%d]",config->fDy5Channels[pmt_ids[pmt_id]]-1));
 
+                /*
                 tmpmean=hist->GetBinContent(hist->GetMaximumBin());
                 result=hist->Fit("gaus","SNQ","",tmpmean-200,tmpmean+200);
                 tmpmean=result->Parameter(1);
@@ -331,6 +332,10 @@ void fit_testingdata(const char* outfile,const char* pardir,const char* testdir,
                 if((tmpmean-5*tmpsigma)<16000){
                     result=hist->Fit("gaus","SNQ","",tmpmean-5*tmpsigma,tmpmean+5*tmpsigma);
                 }
+                */
+                result=hist->Fit("gaus","SNQ");
+                tmpmean=result->Parameter(1);
+                tmpsigma=result->Parameter(2);
 
                 fitdata.fDy5Mean=result->Parameter(1)-pedestals->fBegin[config->fDy5Channels[pmt_ids[pmt_id]]].fMean;
                 fitdata.fDy5Sigma=result->Parameter(2);
@@ -596,7 +601,7 @@ void get_references(TFile* filein)
     }
 }
 
-void calib_led(const char* infile,const char* testdir)
+void calibtest_led(const char* infile,const char* testdir)
 {
 
     TFile* filein=new TFile(infile,"update");
@@ -646,6 +651,48 @@ void calib_led(const char* infile,const char* testdir)
             dir_raw->cd();
             //cout<<testraw->fLEDCalibData.size()<<endl;
             testraw->Write(0,TObject::kOverwrite);
+            cout<<"rawnum:"<<keys->GetSize()<<endl;
+        }
+    }
+
+    delete filein;
+}
+
+void calibref_led(const char* infile,const char* testdir,int refid=1)
+{
+    TFile* filein=new TFile(infile,"update");
+
+    PTAnaPMTRefRaw* refraw=0;
+    filein->GetObject(Form("reference/%s",testdir),refraw);
+    refraw->Print();
+
+    TDirectory* dir_ref=filein->GetDirectory("reference");
+    if(!dir_ref){
+        printf("error!can't get \"reference\" in %s\n",filein->GetName());
+        exit(1);
+    }
+
+    TList *keysinput=dir_ref->GetListOfKeys();
+    cout<<keysinput->GetName()<<endl;
+    TList *keys=(TList*)keysinput->Clone("clonekets");
+    cout<<keys->GetName()<<endl;
+    cout<<"rawnum:"<<keys->GetSize()<<endl;
+    TKey *key;
+    TIter next(keys);
+    Int_t size,gid;
+    PTAnaPMTRefRaw* currentref=0;
+    std::map<int,PTAnaPMTFitData>::iterator	it;
+    if(keys){
+        while (key=(TKey*)next()) {
+            currentref=(PTAnaPMTRefRaw*)dir_ref->Get(key->GetName());
+            currentref->Print();
+            cout<<currentref->fLEDCalibData.size()<<endl;
+
+            currentref->CalibLED(refraw);
+
+            dir_ref->cd();
+            //cout<<testraw->fLEDCalibData.size()<<endl;
+            currentref->Write(0,TObject::kOverwrite);
             cout<<"rawnum:"<<keys->GetSize()<<endl;
         }
     }
