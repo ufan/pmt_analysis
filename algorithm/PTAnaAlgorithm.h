@@ -32,5 +32,7 @@ void check_testdata(const char* infile,const char* serialno);
 void get_configurations(TFile* infile);
 void get_references(TFile* filein);
 
-void calib_led(const char* infile,const char* testdir);
+void calibtest_led(const char* infile,const char* testdir,int refid=1);
+void calibref_led(const char* infile,const char* testdir,int refid=1);
+
 #endif // _PTAnaAlgorithm_h_

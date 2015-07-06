@@ -6,17 +6,5 @@ include(RootNewMacros.cmake)
 
 add_subdirectory(data_structure)
 add_subdirectory(algorithm)
+add_subdirectory(macros)
 
-#set(SCRIPTS
-#  maketemplate
-#  rootlogon.C
-#  )
-
-#foreach(_script ${SCRIPTS})
-#  configure_file(
-#    scripts/${_script}
-#    ${CMAKE_INSTALL_PREFIX}/${_script}   
-#    )
-#endforeach()
-
-#add_custom_target(basic DEPENDS kernel scripts)

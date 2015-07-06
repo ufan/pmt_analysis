@@ -292,7 +292,7 @@ void fit_testingdata(const char* outfile,const char* pardir,const char* testdir,
     Char_t buffer[256];
     FILE* fpconfig;
     TFitResultPtr result;
-    double tmpmean,tmpsigma;
+    double tmpmean,tmpsigma,tmpmeanerror,tmpsigmaerror;
     PTAnaPMTFitData fitdata;
 
     for(int hv_id=0;hv_id<HIGHVOLTAGE_STEP;hv_id++){
@@ -350,16 +350,20 @@ void fit_testingdata(const char* outfile,const char* pardir,const char* testdir,
                 result=hist->Fit("gaus","SNQ");
                 tmpmean=result->Parameter(1);
                 tmpsigma=result->Parameter(2);
+                tmpmeanerror=result->ParError(1);
+                tmpsigmaerror=result->ParError(2);
 
-                /*
-                if((tmpmean-5*tmpsigma)<16000){
-                    result=hist->Fit("gaus","SNQ","",tmpmean-5*tmpsigma,tmpmean+5*tmpsigma);
+                if(tmpmean > 12000){
+                    tmpmean=hist->GetMean();
+                    tmpsigma=hist->GetRMS();
+                    tmpmeanerror=hist->GetMeanError();
+                    tmpsigmaerror=hist->GetRMSError();
                 }
-                */
-                fitdata.fDy8Mean=result->Parameter(1)-pedestals->fBegin[config->fDy8Channels[pmt_ids[pmt_id]]].fMean;
-                fitdata.fDy8Sigma=result->Parameter(2);
-                fitdata.fDy8MeanError=result->ParError(1);
-                fitdata.fDy8SigmaError=result->ParError(2);
+
+                fitdata.fDy8Mean=tmpmean-pedestals->fBegin[config->fDy8Channels[pmt_ids[pmt_id]]].fMean;
+                fitdata.fDy8Sigma=tmpsigma;
+                fitdata.fDy8MeanError=tmpmeanerror;
+                fitdata.fDy8SigmaError=tmpsigmaerror;
                 fitdata.fDy8FitResult=result;
 
                 ///
@@ -409,16 +413,20 @@ void fit_testingdata(const char* outfile,const char* pardir,const char* testdir,
                 result=hist->Fit("gaus","SNQ");
                 tmpmean=result->Parameter(1);
                 tmpsigma=result->Parameter(2);
+                tmpmeanerror=result->ParError(1);
+                tmpsigmaerror=result->ParError(2);
 
-                /*
-                if((tmpmean-5*tmpsigma)<16000){
-                    result=hist->Fit("gaus","SNQ","",tmpmean-5*tmpsigma,tmpmean+5*tmpsigma);
+                if(tmpmean > 12000){
+                    tmpmean=hist->GetMean();
+                    tmpsigma=hist->GetRMS();
+                    tmpmeanerror=hist->GetMeanError();
+                    tmpsigmaerror=hist->GetRMSError();
                 }
-                */
-                fitdata.fDy8Mean=result->Parameter(1)-pedestals->fBegin[config->fDy8Channels[pmt_ids[pmt_id]]].fMean;
-                fitdata.fDy8Sigma=result->Parameter(2);
-                fitdata.fDy8MeanError=result->ParError(1);
-                fitdata.fDy8SigmaError=result->ParError(2);
+
+                fitdata.fDy8Mean=tmpmean-pedestals->fBegin[config->fDy8Channels[pmt_ids[pmt_id]]].fMean;
+                fitdata.fDy8Sigma=tmpsigma;
+                fitdata.fDy8MeanError=tmpmeanerror;
+                fitdata.fDy8SigmaError=tmpsigmaerror;
                 fitdata.fDy8FitResult=result;
 
                 ///
@@ -491,14 +499,7 @@ void check_testdata(const char* infile,const char* serialno)
   //////////
     TFile* filein=new TFile(infile);
     get_configurations(filein);
-
-    TDirectory* dir_config=filein->GetDirectory("configuration");
-    if(!dir_config){
-        printf("error!can't get \"configuration\" in %s\n",filein->GetName());
-        exit(1);
-    }
-    //PTAnaConfigData* config_tmp=(PTAnaConfigData*)dir_config->Get("retest_8");
-    //std::cout<< config_tmp <<std::endl;
+    get_references(filein);
 
     TDirectory* dir_raw=filein->GetDirectory("raw");
     if(!dir_raw){
@@ -507,13 +508,17 @@ void check_testdata(const char* infile,const char* serialno)
     }
     PTAnaPMTRaw* testraw=(PTAnaPMTRaw*)dir_raw->Get(serialno);
 
-    TRef ref=testraw->fConfigData;
-    ref.Print();
-    PTAnaConfigData* config=(PTAnaConfigData*)ref.GetObject();
+
+    TRef reftmp=testraw->fConfigData;
+    PTAnaConfigData* config=(PTAnaConfigData*)reftmp.GetObject();
     if(!config)
         std::cout<<"error"<<std::endl;
     config->Print();
     
+    PTAnaPMTRefRaw* ref=(PTAnaPMTRefRaw*)testraw->fRefPMTData.GetObject();
+    if(!ref)
+        std::cout<<"error"<<std::endl;
+    ref->Print();
     ///////////
     cout<<"fuck"<<endl;
     ofstream fileout(Form("%s_checktest.dat",serialno));
@@ -542,6 +547,18 @@ void check_testdata(const char* infile,const char* serialno)
         cout<<"\t"<<j+1<<endl;
         gid=ledconfig.fAll[PTAnaLedConfig::fVoltages[i]][j].fGID;
         fileout<< testraw->fLEDCalibData[gid].fDy8Mean<<"\t";
+      }
+      fileout<<endl;
+    }
+
+    for(int i=0;i<PTAnaLedConfig::fVoltageStep;i++){
+      fileout<<PTAnaLedConfig::fVoltages[i]<<"Ref Calib:\t";
+      size=ledconfig.fAll[PTAnaLedConfig::fVoltages[i]].size();
+      cout<<size<<endl;
+      for(int j=0;j<size;j++){
+        cout<<"\t"<<j+1<<endl;
+        gid=ledconfig.fAll[PTAnaLedConfig::fVoltages[i]][j].fGID;
+        fileout<< ref->fLEDCalibData[gid].fDy8Mean<<"\t";
       }
       fileout<<endl;
     }
@@ -601,7 +618,7 @@ void get_references(TFile* filein)
     }
 }
 
-void calibtest_led(const char* infile,const char* testdir)
+void calibtest_led(const char* infile,const char* testdir,int refid)
 {
 
     TFile* filein=new TFile(infile,"update");
@@ -638,8 +655,8 @@ void calibtest_led(const char* infile,const char* testdir)
             cout<<testraw->fLEDCalibData.size()<<endl;
             //
             currentref=(PTAnaPMTRefRaw*)testraw->fRefPMTData.GetObject();
-            dy5ratios=currentref->GetCalibRatioDy5(refraw);
-            dy8ratios=currentref->GetCalibRatioDy8(refraw);
+            dy5ratios=currentref->GetCalibRatioDy5(refraw,refid);
+            dy8ratios=currentref->GetCalibRatioDy8(refraw,refid);
 
             testraw->fLEDCalibData.clear();
             testraw->fLEDCalibData=testraw->fRawTestData;
@@ -658,7 +675,7 @@ void calibtest_led(const char* infile,const char* testdir)
     delete filein;
 }
 
-void calibref_led(const char* infile,const char* testdir,int refid=1)
+void calibref_led(const char* infile,const char* testdir,int refid)
 {
     TFile* filein=new TFile(infile,"update");
 
@@ -688,7 +705,7 @@ void calibref_led(const char* infile,const char* testdir,int refid=1)
             currentref->Print();
             cout<<currentref->fLEDCalibData.size()<<endl;
 
-            currentref->CalibLED(refraw);
+            currentref->CalibLED(refraw,refid);
 
             dir_ref->cd();
             //cout<<testraw->fLEDCalibData.size()<<endl;
@@ -699,3 +716,5 @@ void calibref_led(const char* infile,const char* testdir,int refid=1)
 
     delete filein;
 }
+
+
