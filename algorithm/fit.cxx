@@ -25,6 +25,7 @@
 #include "PTAnaBase.h"
 #include "PTAnaPMTPedestals.h"
 #include "PTAnaLedConfig.h"
+#include "PTAnaResultDy58.h"
 #include "TFile.h"
 #include "TString.h"
 #include "TFitResult.h"
@@ -37,6 +38,8 @@
 #include "TList.h"
 #include "TKey.h"
 #include "TIterator.h"
+#include "TGraph.h"
+#include "TMath.h"
 #include <fstream>
 #include <iostream>
 #include <vector>
@@ -717,4 +720,92 @@ void calibref_led(const char* infile,const char* testdir,int refid)
     delete filein;
 }
 
+void fit_dy58(const char* infile,const char* outfile)
+{
+    ///Get LED configurations
+    PTAnaLedConfig ledconfig;
+    ledconfig.ReadConfig("./LED_config");
 
+    /// input file
+    TFile* filein=new TFile(infile);
+
+    PTAnaPMTRaw *testraw=0;
+    TDirectory* dir_raw=filein->GetDirectory("raw");
+    if(!dir_raw){
+        printf("error!can't get \"raw\" in %s\n",filein->GetName());
+        exit(1);
+    }
+
+    /// output file
+    TFile* fileout=new TFile(outfile,"recreate");
+    TDirectory* dir_out=fileout->GetDirectory("dy58_result");
+    if(!dir_out){
+      dir_out=fileout->mkdir("dy58_result");
+      if(!dir_out){
+        printf("error!can't mkdir \"dy58_result\" in %s\n",fileout->GetName());
+        exit(1);
+      }
+    }
+
+    ///
+    Double_t tmpratio;
+    TGraphErrors* gdy58,*gdy58voltage;
+    TGraph*       gdy58tmp;
+    TFitResultPtr result;
+    TF1* fpower=new TF1("fpower","[0]*TMath::Power(x,[1])",700,1000);
+    PTAnaResultDy58 *dy58result;
+
+    TList *keys=dir_raw->GetListOfKeys();
+    TKey *key;
+    TIter next(keys);
+    Int_t size,counter;
+    std::map<int,PTAnaPMTFitData>::iterator	it;
+    if(keys){
+        while (key=(TKey*)next()) {
+            testraw=(PTAnaPMTRaw*)key->ReadObj();
+            dy58result=new PTAnaResultDy58(key->GetName());
+            ///
+            gdy58voltage=new TGraphErrors();
+            gdy58tmp=new TGraph();
+
+            for(int i=0;i<PTAnaLedConfig::fVoltageStep;i++){
+                ///
+                size=ledconfig.fDy58[PTAnaLedConfig::fVoltages[i]].size();
+                gdy58=new TGraphErrors();
+
+                counter=0;
+                for(int j=0;j<size;j++){
+                    if(testraw->fRawTestData[ledconfig.fDy58[PTAnaLedConfig::fVoltages[i]][j].fGID].IsValid()){
+                        gdy58->SetPoint(counter,testraw->fRawTestData[ledconfig.fDy58[PTAnaLedConfig::fVoltages[i]][j].fGID].fDy5Mean,testraw->fRawTestData[ledconfig.fDy58[PTAnaLedConfig::fVoltages[i]][j].fGID].fDy8Mean);
+                        gdy58->SetPointError(counter,testraw->fRawTestData[ledconfig.fDy58[PTAnaLedConfig::fVoltages[i]][j].fGID].fDy5MeanError,testraw->fRawTestData[ledconfig.fDy58[PTAnaLedConfig::fVoltages[i]][j].fGID].fDy8MeanError);
+                        counter++;
+                    }
+                }
+                result=gdy58->Fit("pol1","SNQ");
+                tmpratio=result->Parameter(1);
+                gdy58voltage->SetPoint(i,PTAnaLedConfig::fVoltages[i],tmpratio);
+                gdy58voltage->SetPointError(i,0,result->ParError(1));
+                gdy58tmp->SetPoint(i,TMath::Log(PTAnaLedConfig::fVoltages[i]),TMath::Log(tmpratio));
+
+                delete gdy58;
+            }
+
+            result=gdy58tmp->Fit("pol1","SNQ");
+            fpower->SetParameter(0,TMath::Exp(result->Parameter(0)));
+            fpower->SetParameter(1,result->Parameter(1));
+            gdy58voltage->Fit(fpower,"SNQ");
+            dy58result->SetGraph(*gdy58voltage);
+            dy58result->SetFunction(fpower);
+            dir_out->cd();
+            dy58result->Write(0,TObject::kOverwrite);
+            ///
+            delete gdy58tmp;
+            delete gdy58voltage;
+            delete dy58result;
+        }
+    }
+
+    delete fpower;
+    delete filein;
+    delete fileout;
+}

@@ -10,5 +10,6 @@
 #pragma link C++ class PTAnaPMTRefRaw+;
 #pragma link C++ class PTAnaPMTPedestals+;
 #pragma link C++ class PTAnaPedFitData+;
+#pragma link C++ class PTAnaResultDy58+;
 
 #endif
