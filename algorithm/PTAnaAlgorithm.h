@@ -36,4 +36,5 @@ void calibtest_led(const char* infile,const char* testdir,int refid=1);
 void calibref_led(const char* infile,const char* testdir,int refid=1);
 
 void fit_dy58(const char* infile,const char* outfile);
+void fit_gain(const char* infile,const char* outfile);
 #endif // _PTAnaAlgorithm_h_

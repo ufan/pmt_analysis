@@ -26,6 +26,7 @@
 #include "PTAnaPMTPedestals.h"
 #include "PTAnaLedConfig.h"
 #include "PTAnaResultDy58.h"
+#include "PTAnaResultGain.h"
 #include "TFile.h"
 #include "TString.h"
 #include "TFitResult.h"
@@ -737,7 +738,7 @@ void fit_dy58(const char* infile,const char* outfile)
     }
 
     /// output file
-    TFile* fileout=new TFile(outfile,"recreate");
+    TFile* fileout=new TFile(outfile,"update");
     TDirectory* dir_out=fileout->GetDirectory("dy58_result");
     if(!dir_out){
       dir_out=fileout->mkdir("dy58_result");
@@ -801,6 +802,97 @@ void fit_dy58(const char* infile,const char* outfile)
             delete gdy58tmp;
             delete gdy58voltage;
             delete dy58result;
+            delete testraw;
+        }
+    }
+
+    delete fpower;
+    delete filein;
+    delete fileout;
+}
+
+void fit_gain(const char* infile,const char* outfile)
+{
+    Double_t chdiff[22]={1,0.9229489084,0.9826740553,1.4156239459,2.3755678232,1.6558542465,1.2805373397,0.9679244407,0.9775294564,1.0089874509,1.1552736628,1.1590895518,0.9583953481,1.1917968403,1.2163063265,0.8801377945,1.0919424778,1.1042352064,1.2054868929,0.997250652,1.1345035052,1.0641661809};
+    std::map<int,Double_t> chdiffmap;
+    for(int i=0;i<22;i++){
+        chdiffmap[i+3]=chdiff[i];
+    }
+    ///Get LED configurations
+    PTAnaLedConfig ledconfig;
+    ledconfig.ReadConfig("./LED_config");
+
+    /// input file
+    TFile* filein=new TFile(infile);
+
+    PTAnaPMTRaw *testraw=0;
+    TDirectory* dir_raw=filein->GetDirectory("raw");
+    if(!dir_raw){
+        printf("error!can't get \"raw\" in %s\n",filein->GetName());
+        exit(1);
+    }
+
+    /// output file
+    TFile* fileout=new TFile(outfile,"recreate");
+    TDirectory* dir_out=fileout->GetDirectory("gain_result");
+    if(!dir_out){
+      dir_out=fileout->mkdir("gain_result");
+      if(!dir_out){
+        printf("error!can't mkdir \"gain_result\" in %s\n",fileout->GetName());
+        exit(1);
+      }
+    }
+
+    ///
+    /// \brief ggain
+    ///
+    Double_t gainvalue,voltage;
+    TGraphErrors *ggain;
+    TGraph*       ggaintmp;
+    TFitResultPtr result;
+    TF1* fpower=new TF1("fpower","[0]*TMath::Power(x,[1])",700,1000);
+    PTAnaResultGain *gainresult;
+
+    TList *keys=dir_raw->GetListOfKeys();
+    TKey *key;
+    TIter next(keys);
+    Int_t size,counter;
+    if(keys){
+        while (key=(TKey*)next()) {
+            testraw=(PTAnaPMTRaw*)key->ReadObj();
+            gainresult=new PTAnaResultGain(key->GetName());
+            ///
+            size=ledconfig.fGain.size();
+            for(int ampid=0;ampid<size;ampid++){
+                ggain=new TGraphErrors();
+                ggaintmp=new TGraph();
+                counter=0;
+                for(int i=0;i<PTAnaLedConfig::fVoltageStep;i++){
+                    ///
+                    if(testraw->fRawTestData[ledconfig.fGain[ampid][PTAnaLedConfig::fVoltages[i]].fGID].IsValid()){
+                        voltage=PTAnaLedConfig::fVoltages[i];
+                        gainvalue=testraw->fLEDCalibData[ledconfig.fGain[ampid][PTAnaLedConfig::fVoltages[i]].fGID].fDy8Mean*chdiffmap[testraw->GetChannel()];
+                        ggain->SetPoint(counter,voltage,gainvalue);
+                        ggain->SetPointError(counter,0,testraw->fLEDCalibData[ledconfig.fGain[ampid][PTAnaLedConfig::fVoltages[i]].fGID].fDy8MeanError);
+                        ggaintmp->SetPoint(counter,TMath::Log(voltage),TMath::Log(gainvalue));
+                        counter++;
+                    }
+                }
+                result=ggaintmp->Fit("pol1","SNQ");
+                fpower->SetParameter(0,TMath::Exp(result->Parameter(0)));
+                fpower->SetParameter(1,result->Parameter(1));
+                ggain->Fit(fpower,"SNQ");
+                gainresult->AddFunction(fpower);
+                gainresult->AddGraph(*ggain);
+                ///
+                delete ggain;
+                delete ggaintmp;
+            }
+
+            dir_out->cd();
+            gainresult->Write(0,TObject::kOverwrite);
+            ///
+            delete gainresult;
             delete testraw;
         }
     }
