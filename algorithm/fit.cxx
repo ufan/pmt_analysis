@@ -759,7 +759,6 @@ void fit_dy58(const char* infile,const char* outfile)
     TKey *key;
     TIter next(keys);
     Int_t size,counter;
-    std::map<int,PTAnaPMTFitData>::iterator	it;
     if(keys){
         while (key=(TKey*)next()) {
             testraw=(PTAnaPMTRaw*)key->ReadObj();
@@ -802,6 +801,7 @@ void fit_dy58(const char* infile,const char* outfile)
             delete gdy58tmp;
             delete gdy58voltage;
             delete dy58result;
+            delete testraw;
         }
     }
 
