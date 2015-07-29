@@ -58,6 +58,16 @@ Double_t PTAnaResultDy58::GetVoltage(Double_t dy58)
     return fFunctionDy58->GetX(dy58);
 }
 
+TGraphErrors PTAnaResultDy58::ExtractGraph()
+{
+    return fGraphDy58;
+}
+
+TF1 PTAnaResultDy58::ExtractFunction()
+{
+    return *fFunctionDy58;
+}
+
 /*
 void PTAnaResultDy58::SetGraph(TGraphErrors &gr)
 {

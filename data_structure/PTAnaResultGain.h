@@ -24,6 +24,8 @@ public:
 
     void AddGraph(TGraphErrors& gr);
     void AddFunction(TF1* f);
+    TGraphErrors ExtractGraph(Int_t ampid=1);
+    TF1 ExtractFunction(Int_t ampid=1);
 
 private:
     std::vector<TGraphErrors>   fGraphGains;

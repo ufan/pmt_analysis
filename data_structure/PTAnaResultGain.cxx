@@ -79,3 +79,25 @@ Double_t PTAnaResultGain::GetVoltage(Double_t gain, Int_t ampid)
 
     return fFunctionGains[ampid-1]->GetX(gain);
 }
+
+TGraphErrors PTAnaResultGain::ExtractGraph(Int_t ampid)
+{
+    Int_t size=fGraphGains.size();
+    if(ampid>size){
+        std::cout<<"Error: out of range:1-"<<size<<std::endl;
+        return TGraphErrors();
+    }
+
+    return fGraphGains[ampid-1];
+}
+
+TF1 PTAnaResultGain::ExtractFunction(Int_t ampid)
+{
+    Int_t size=fFunctionGains.size();
+    if(ampid>size){
+        std::cout<<"Error: out of range:1-"<<size<<std::endl;
+        return TF1();
+    }
+
+    return *(fFunctionGains[ampid-1]);
+}

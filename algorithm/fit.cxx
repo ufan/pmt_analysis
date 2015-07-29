@@ -813,7 +813,9 @@ void fit_dy58(const char* infile,const char* outfile)
 
 void fit_gain(const char* infile,const char* outfile)
 {
+
     Double_t chdiff[22]={1,0.9229489084,0.9826740553,1.4156239459,2.3755678232,1.6558542465,1.2805373397,0.9679244407,0.9775294564,1.0089874509,1.1552736628,1.1590895518,0.9583953481,1.1917968403,1.2163063265,0.8801377945,1.0919424778,1.1042352064,1.2054868929,0.997250652,1.1345035052,1.0641661809};
+    //Double_t chdiff[22]={1.1392822975,1.0152425209,1.1242320028,1.2200557317,1.2408733138,0.983876502,1.1078648382,1.0004872226,1.2204004479,0.9421621682,0.9985969441,1.0512069593,1.1053961843,0.9559256514,1.0933712383,0.9661240935,1.131898346,0.9709987265,1.1677821861,0.9874153723,1.0648643335,0.9756698285};
     std::map<int,Double_t> chdiffmap;
     for(int i=0;i<22;i++){
         chdiffmap[i+3]=chdiff[i];
@@ -871,7 +873,7 @@ void fit_gain(const char* infile,const char* outfile)
                     ///
                     if(testraw->fRawTestData[ledconfig.fGain[ampid][PTAnaLedConfig::fVoltages[i]].fGID].IsValid()){
                         voltage=PTAnaLedConfig::fVoltages[i];
-                        gainvalue=testraw->fLEDCalibData[ledconfig.fGain[ampid][PTAnaLedConfig::fVoltages[i]].fGID].fDy8Mean*chdiffmap[testraw->GetChannel()];
+                        gainvalue=testraw->fLEDCalibData[ledconfig.fGain[ampid][PTAnaLedConfig::fVoltages[i]].fGID].fDy8Mean/chdiffmap[testraw->GetChannel()];
                         ggain->SetPoint(counter,voltage,gainvalue);
                         ggain->SetPointError(counter,0,testraw->fLEDCalibData[ledconfig.fGain[ampid][PTAnaLedConfig::fVoltages[i]].fGID].fDy8MeanError);
                         ggaintmp->SetPoint(counter,TMath::Log(voltage),TMath::Log(gainvalue));

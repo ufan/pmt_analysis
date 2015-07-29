@@ -1,6 +1,7 @@
 #include "PTAnaPMTRefRaw.h"
 #include "PTAnaLedConfig.h"
 #include "PTAnaBase.h"
+#include "PTAnaPMTRaw.h"
 #include "TList.h"
 #include "TKey.h"
 #include "TIterator.h"
@@ -11,7 +12,9 @@
 #include "TMultiGraph.h"
 #include <iostream>
 #include <vector>
-
+#include "TCanvas.h"
+#include <map>
+#include "PTAnaResultDy58.h"
 void draw_test(const char* infile)
 {
     TFile *filein=new TFile(infile);
@@ -73,76 +76,3 @@ void draw_test(const char* infile)
     delete filein;
 }
 
-void draw_relativegain_ref(const char* filename,const char* dirname,int voltage)
-{
-    //PTAnaLedConfig ledconfig;
-    //ledconfig.ReadConfig("./LED_config");
-
-    TGraphErrors* gre=new TGraphErrors();
-
-    TFile* filein=new TFile(filename);
-
-    TDirectory* dir_ref=filein->GetDirectory("reference");
-    if(!dir_ref){
-        printf("error!can't get \"reference\" in %s\n",filein->GetName());
-        exit(1);
-    }
-
-    PTAnaPMTRefRaw* refraw=(PTAnaPMTRefRaw*)dir_ref->Get(dirname);
-    std::map<int,PTAnaPMTFitData>::iterator it;
-    Int_t counter=0;
-    for(it=refraw->fRawDataRef1.begin();it!=refraw->fRawDataRef1.end();it++){
-        if(voltage==PTAnaBase::DecodeVoltage(it->first)){
-            if(it->second.IsValid()){
-                gre->SetPoint(counter,it->second.fDy8Mean,refraw->fRawDataRef2[it->first].fDy8Mean);
-                gre->SetPointError(counter,it->second.fDy8MeanError,refraw->fRawDataRef2[it->first].fDy8MeanError);
-                counter++;
-            }
-        }
-    }
-
-    delete filein;
-    gre->Draw("A*");
-}
-
-void draw_dy58(const char* filename,const char* dirname)
-{
-    TMultiGraph* mg=new TMultiGraph();
-    std::map<int,TGraphErrors*> gres;
-    std::map<int,int> counters;
-    for(int i=0;i<PTAnaLedConfig::fVoltageStep;i++){
-        gres[PTAnaLedConfig::fVoltages[i]]=new TGraphErrors();
-        gres[PTAnaLedConfig::fVoltages[i]]->SetMarkerColor(i+1);
-        mg->Add(gres[PTAnaLedConfig::fVoltages[i]]);
-        counters[PTAnaLedConfig::fVoltages[i]]=0;
-    }
-    //TGraphErrors* gre=new TGraphErrors();
-
-    TFile* filein=new TFile(filename);
-
-    TDirectory* dir_ref=filein->GetDirectory("reference");
-    if(!dir_ref){
-        printf("error!can't get \"reference\" in %s\n",filein->GetName());
-        exit(1);
-    }
-
-    PTAnaPMTRefRaw* refraw=(PTAnaPMTRefRaw*)dir_ref->Get(dirname);
-    std::map<int,PTAnaPMTFitData>::iterator it;
-    Int_t voltage;
-    for(it=refraw->fRawDataRef1.begin();it!=refraw->fRawDataRef1.end();it++){
-        voltage=PTAnaBase::DecodeVoltage(it->first);
-        gres[voltage]->SetPoint(counters[voltage],it->second.fDy5Mean,it->second.fDy8Mean);
-        gres[voltage]->SetPointError(counters[voltage],it->second.fDy5MeanError,it->second.fDy8MeanError);
-        counters[voltage]++;
-    }
-
-    delete filein;
-
-
-    for(int i=0;i<PTAnaLedConfig::fVoltageStep;i++){
-        gres[PTAnaLedConfig::fVoltages[i]]->Fit("pol1","","same");
-    }
-
-    //mg->Draw("A*");
-
-}

@@ -18,6 +18,8 @@ public:
 
     void SetGraph(TGraphErrors& gr);
     void SetFunction(TF1* f);
+    TGraphErrors ExtractGraph();
+    TF1 ExtractFunction();
 
 private:
     TGraphErrors    fGraphDy58;
