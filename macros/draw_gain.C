@@ -727,3 +727,91 @@ void print_parameters(const char* infile,int par_id=1)
 
     hpara->Draw();
 }
+
+void draw_gain_dist(const char* fitfile,const char* infile,double voltage, int ampid=5)
+{
+    gStyle->SetOptTitle(0);
+    gStyle->SetOptStat(1111);
+    gStyle->SetOptFit(0);
+    gStyle->SetFrameBorderMode(0);
+    gStyle->SetCanvasBorderMode(0);
+    gStyle->SetPadBorderMode(0);
+    gStyle->SetFrameLineWidth(2);
+    gStyle->SetMarkerSize(1.2);
+    gStyle->SetMarkerStyle(20);
+    gStyle->SetTickLength(0.04,"xyz");
+    gStyle->SetTitleFont(22,"xyz");
+    gStyle->SetTitleSize(0.05,"xyz");
+    gStyle->SetTitleOffset(1.0,"xyz");
+    gStyle->SetLabelFont(132,"xyz");
+    gStyle->SetLabelSize(0.05,"xyz");
+    gStyle->SetLegendFont(132);
+
+
+        int chlow=6;
+        int chhigh=9;
+        int chtmp=17;
+
+        TFile *filefit=new TFile(fitfile);
+        PTAnaPMTRaw *testraw=0;
+        TDirectory* dir_raw=filefit->GetDirectory("raw");
+        if(!dir_raw){
+            printf("error!can't get \"raw\" in %s\n",filefit->GetName());
+            exit(1);
+        }
+
+        TH1F* hall=new TH1F(Form("%.0fV",voltage),Form("%.0fV",voltage),100,0,5.9);
+
+        TFile* filein=new TFile(infile);
+
+        TDirectory* dir_gain=filein->GetDirectory("gain_result");
+        if(!dir_gain){
+            printf("error!can't get \"gain_result\" in %s\n",filein->GetName());
+            exit(1);
+        }
+        PTAnaResultGain *gain=0;
+        gain=(PTAnaResultGain*)dir_gain->Get("AA2483");
+        Double_t refgain=gain->Evaluate(voltage,ampid);
+
+        TList *keys=dir_gain->GetListOfKeys();
+        TKey *key;
+        TIter next(keys);
+        if(keys){
+            while (key=(TKey*)next()) {
+                gain=(PTAnaResultGain*)key->ReadObj();
+                testraw=(PTAnaPMTRaw*)dir_raw->Get(gain->GetName());
+                /*
+                if(gain->Evaluate(voltage,ampid)/refgain > 3){
+                    if((testraw->GetChannel()>=chlow && testraw->GetChannel()<=chhigh) || testraw->GetChannel()==chtmp ){
+                        continue;
+                    }
+                    if(gain->Evaluate(voltage,ampid)/refgain > 5.5){
+                        continue;
+                    }
+                }
+                */
+                hall->Fill(gain->Evaluate(voltage,ampid)/refgain);
+            }
+        }
+
+        delete filein;
+
+
+        Int_t cw,ch;
+        cw=700;ch=500;
+        TCanvas* cg=new TCanvas("cg","cg",cw,ch);
+          //c->SetCanvasSize(cx,cy); //method 1
+          cg->SetWindowSize(cw+(cw-cg->GetWw()),ch+(ch-cg->GetWh()));
+            gPad->SetLeftMargin(0.09);
+            gPad->SetTopMargin(0.0);
+            gPad->SetRightMargin(0.0);
+            gPad->SetBottomMargin(0.12);
+        hall->GetXaxis()->SetTitleOffset(1.1);
+        hall->GetXaxis()->CenterTitle();
+        hall->GetXaxis()->SetTitle("G_{relative}(against the tube with the smallest gain)");
+        hall->GetYaxis()->SetTitleOffset(0.95);
+        hall->GetYaxis()->CenterTitle();
+        hall->GetYaxis()->SetTitle("Number of PMTs");
+        hall->GetYaxis()->SetNdivisions(508);
+        hall->Draw();
+}

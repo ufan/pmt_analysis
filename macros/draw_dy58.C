@@ -151,9 +151,9 @@ void draw_dy58(const char* infile,const char* paramfile,const char* potfile)
     */
 }
 
-void draw_dy58_all(const char* infile)
+void draw_dy58_all(const char* infile,float voltage)
 {
-    TH1F *hist=new TH1F("hist","Distribution of Dy8/Dy5 at 818V",40,31,71);
+    TH1F *hist=new TH1F(Form("%.0fV",voltage),"Distribution of Dy8/Dy5",40,36,76);
     hist->SetLineColor(kBlue);
     hist->SetFillStyle(3004);
     hist->SetFillColor(kBlue);
@@ -173,7 +173,7 @@ void draw_dy58_all(const char* infile)
     if(keys){
         while (key=(TKey*)next()) {
             dy58=(PTAnaResultDy58*)key->ReadObj();
-            hist->Fill(dy58->Evaluate(818.18));
+            hist->Fill(dy58->Evaluate(voltage));
         }
     }
 
